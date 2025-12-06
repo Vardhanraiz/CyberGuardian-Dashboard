@@ -261,17 +261,93 @@ elif page == "Device Security":
 # ---------------------------------------------------------
 # DASHBOARD PAGE
 # ---------------------------------------------------------
+
+     # ---------------------------------------------------------
+# DASHBOARD PAGE - UPGRADED UI + GRAPHICAL ANALYTICS
+# ---------------------------------------------------------
 else:
     st.title("📊 CyberGuardian Dashboard")
 
     score = calculate_score(st.session_state.accounts, st.session_state.device)
-
-    st.subheader(f"Your Security Score: {score}/100")
-    st.progress(score / 100)
-
-    st.write("### Recommendations")
     recs = get_recommendations(st.session_state.accounts, st.session_state.device, score)
 
+    st.markdown("""<br>""", unsafe_allow_html=True)
+
+    # -------------------- SCORE CARD ------------------------
+    st.markdown(
+        f"""
+        <div class="card" style="text-align:center;">
+            <h2 style="color:#58a6ff;">Overall Security Score</h2>
+            <h1 style="font-size: 60px; color:#3fb950; font-weight:800;">{score}</h1>
+            <p>Your personal cybersecurity posture score (0–100)</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.progress(score / 100)
+
+    st.markdown("""<br>""", unsafe_allow_html=True)
+
+    # -------------------- LAYOUT (2 Columns) ------------------------
+    col1, col2 = st.columns(2)
+
+    # ---------- PIE CHART: PASSWORD STRENGTH ----------
+    with col1:
+        st.subheader("🔐 Password Strength Distribution")
+
+        if st.session_state.accounts:
+            import matplotlib.pyplot as plt
+
+            counts = {"Weak": 0, "Medium": 0, "Strong": 0}
+            for acc in st.session_state.accounts:
+                counts[acc["password_strength"]] += 1
+
+            labels = list(counts.keys())
+            values = list(counts.values())
+
+            fig1, ax1 = plt.subplots()
+            ax1.pie(values, labels=labels, autopct='%1.1f%%')
+            ax1.axis('equal')
+
+            st.pyplot(fig1)
+        else:
+            st.info("Add accounts to view password strength analytics.")
+
+    # ---------- BAR CHART: DEVICE SECURITY ----------
+    with col2:
+        st.subheader("💻 Device Security Status")
+
+        import matplotlib.pyplot as plt
+
+        device = st.session_state.device
+        labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi (Risk)"]
+        values = [
+            1 if device["screen_lock"] else 0,
+            1 if device["os_updated"] else 0,
+            1 if device["antivirus"] else 0,
+            1 if device["public_wifi"] else 0
+        ]
+
+        fig2, ax2 = plt.subplots()
+        ax2.bar(labels, values)
+        plt.xticks(rotation=30, ha='right')
+
+        st.pyplot(fig2)
+
+    st.markdown("""<br>""", unsafe_allow_html=True)
+
+    # -------------------- RECOMMENDATIONS ------------------------
+    st.subheader("📝 Personalized Recommendations")
+
     for r in recs:
-        st.markdown(f"- {r}")
+        st.markdown(
+            f"""
+            <div class="reco-box">
+                {r}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+   
 
