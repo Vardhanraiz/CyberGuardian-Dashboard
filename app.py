@@ -209,14 +209,34 @@ page = st.sidebar.radio("Navigation", ["Dashboard", "Accounts", "Device Security
 
 
 # ---------------------------------------------------------
-# ACCOUNTS PAGE
+
+# ---------------------------------------------------------
+# ACCOUNTS PAGE - UPGRADED UI/UX
 # ---------------------------------------------------------
 if page == "Accounts":
     st.title("🔐 Accounts Manager")
 
-    name = st.text_input("Account Name")
-    password = st.text_input("Password", type="password")
-    two_fa = st.checkbox("Is 2FA Enabled?")
+    st.markdown(
+        """
+        <div class="card">
+            <h3>Add a New Account</h3>
+            <p style='color:#8b949e;'>Enter account details below to evaluate password strength and 2FA status.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ----------------- FORM -----------------
+    with st.container():
+        colA, colB = st.columns(2)
+
+        with colA:
+            name = st.text_input("Account Name", placeholder="e.g., Gmail, Instagram")
+
+        with colB:
+            password = st.text_input("Password", placeholder="Enter password", type="password")
+
+    two_fa = st.checkbox("Enable 2FA?", help="Two-factor authentication improves security.")
 
     if st.button("Add Account"):
         if name and password:
@@ -229,15 +249,42 @@ if page == "Accounts":
             })
 
             st.success(f"Added {name} ({pwd_strength})")
+        else:
+            st.warning("Please fill all fields before adding an account.")
 
-    st.subheader("Your Accounts")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ----------------- ACCOUNT LIST -----------------
+    st.subheader("📋 Your Accounts")
 
     if st.session_state.accounts:
-        df = pd.DataFrame(st.session_state.accounts)
-        df.columns = ["Account", "Password Strength", "2FA Enabled"]
-        st.dataframe(df)
+        styled_accounts = []
+        for acc in st.session_state.accounts:
+            # Badge colors
+            if acc["password_strength"] == "Weak":
+                color = "#f85149"   # red
+            elif acc["password_strength"] == "Medium":
+                color = "#d29922"   # yellow/orange
+            else:
+                color = "#3fb950"   # green
+
+            badge = f"<span style='color:white;background-color:{color};padding:4px 10px;border-radius:6px;font-size:12px;'>{acc['password_strength']}</span>"
+
+            styled_accounts.append([
+                acc["name"],
+                badge,
+                "✔️ Yes" if acc["two_fa"] else "❌ No"
+            ])
+
+        # Display table with HTML badges
+        df = pd.DataFrame(styled_accounts, columns=["Account", "Password Strength", "2FA Enabled"])
+
+        st.write(
+            df.to_html(escape=False, index=False),
+            unsafe_allow_html=True
+        )
     else:
-        st.info("No accounts yet. Add your first account above.")
+        st.info("No accounts added yet. Add your first account above.")
 
 
 # ---------------------------------------------------------
