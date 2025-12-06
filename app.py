@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px      # NEW
+import random
 
 # ---------------------------------------------------------
 # PAGE CONFIG
@@ -469,22 +471,30 @@ else:
             for acc in st.session_state.accounts:
                 counts[acc["password_strength"]] += 1
 
-            labels = list(counts.keys())
-            values = list(counts.values())
+            df_pwd = pd.DataFrame(
+                {"Strength": list(counts.keys()), "Count": list(counts.values())}
+            )
 
-            fig1, ax1 = plt.subplots()
-            ax1.pie(values, labels=labels, autopct='%1.1f%%')
-            ax1.axis('equal')
-            st.pyplot(fig1)
+            fig1 = px.pie(
+                df_pwd,
+                names="Strength",
+                values="Count",
+                hole=0.3,
+            )
+            fig1.update_layout(
+                margin=dict(l=10, r=10, t=30, b=10),
+                height=350,
+            )
+            st.plotly_chart(fig1, use_container_width=True)
         else:
             st.info("Add accounts to view password strength analytics.")
 
     # DEVICE SECURITY BAR CHART
     with col2:
-        st.subheader("💻 Device Security Status")
+               st.subheader("💻 Device Security Status")
 
         device = st.session_state.device
-        labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi (Risk)"]
+        labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi Risk"]
         values = [
             1 if device["screen_lock"] else 0,
             1 if device["os_updated"] else 0,
@@ -492,10 +502,23 @@ else:
             1 if device["public_wifi"] else 0,
         ]
 
-        fig2, ax2 = plt.subplots()
-        ax2.bar(labels, values)
-        plt.xticks(rotation=30, ha='right')
-        st.pyplot(fig2)
+        df_dev = pd.DataFrame({"Control": labels, "Status": values})
+
+        fig2 = px.bar(
+            df_dev,
+            x="Control",
+            y="Status",
+        )
+        fig2.update_yaxes(
+            tickmode="array",
+            tickvals=[0, 1],
+            ticktext=["Off / No", "On / Yes"],
+        )
+        fig2.update_layout(
+            margin=dict(l=10, r=10, t=30, b=10),
+            height=350,
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -521,3 +544,30 @@ else:
             "<div class='reco-box'>No recommendations at this time. Your setup looks good.</div>",
             unsafe_allow_html=True
         )
+        fix_cols = ["High Risk", "Medium Risk", "Low Risk"]
+fix_times = [12, 8, 4]
+
+fig3, ax3 = plt.subplots()
+ax3.bar(fix_cols, fix_times)
+ax3.set_ylabel("Average Time to Fix (hours)")
+st.pyplot(fig3)
+st.markdown("## How Quickly Problems Are Fixed (Example)")
+
+fix_cols = ["High Risk", "Medium Risk", "Low Risk"]
+fix_times = [12, 8, 4]
+
+df_fix = pd.DataFrame({"Risk": fix_cols, "Hours": fix_times})
+
+fig3 = px.bar(
+    df_fix,
+    x="Risk",
+    y="Hours",
+)
+fig3.update_layout(
+    yaxis_title="Average Time to Fix (hours)",
+    margin=dict(l=10, r=10, t=30, b=10),
+    height=350,
+)
+st.plotly_chart(fig3, use_container_width=True)
+
+
