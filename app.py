@@ -96,7 +96,7 @@ st.markdown(dark_theme_css, unsafe_allow_html=True)
 # PAGE CONFIG
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title=" SECUMATRIX",
+    page_title=" CyberGuardian Dashbord",
     page_icon="🛡️",
     layout="wide"
 )
