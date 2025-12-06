@@ -490,35 +490,35 @@ else:
             st.info("Add accounts to view password strength analytics.")
 
     # DEVICE SECURITY BAR CHART
-    with col2:
-               st.subheader("💻 Device Security Status")
+   with col2:
+    st.subheader("💻 Device Security Status")
 
-        device = st.session_state.device
-        labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi Risk"]
-        values = [
-            1 if device["screen_lock"] else 0,
-            1 if device["os_updated"] else 0,
-            1 if device["antivirus"] else 0,
-            1 if device["public_wifi"] else 0,
-        ]
+    device = st.session_state.device
+    labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi Risk"]
+    values = [
+        1 if device["screen_lock"] else 0,
+        1 if device["os_updated"] else 0,
+        1 if device["antivirus"] else 0,
+        1 if device["public_wifi"] else 0,
+    ]
 
-        df_dev = pd.DataFrame({"Control": labels, "Status": values})
+    df_dev = pd.DataFrame({"Control": labels, "Status": values})
 
-        fig2 = px.bar(
-            df_dev,
-            x="Control",
-            y="Status",
-        )
-        fig2.update_yaxes(
-            tickmode="array",
-            tickvals=[0, 1],
-            ticktext=["Off / No", "On / Yes"],
-        )
-        fig2.update_layout(
-            margin=dict(l=10, r=10, t=30, b=10),
-            height=350,
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+    fig2 = px.bar(
+        df_dev,
+        x="Control",
+        y="Status",
+    )
+    fig2.update_yaxes(
+        tickmode="array",
+        tickvals=[0, 1],
+        ticktext=["Off / No", "On / Yes"],
+    )
+    fig2.update_layout(
+        margin=dict(l=10, r=10, t=30, b=10),
+        height=350,
+    )
+    st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
