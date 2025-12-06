@@ -491,34 +491,21 @@ else:
 
     # DEVICE SECURITY BAR CHART
    with col2:
-    st.subheader("💻 Device Security Status")
+        st.subheader("💻 Device Security Status")
 
-    device = st.session_state.device
-    labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi Risk"]
-    values = [
-        1 if device["screen_lock"] else 0,
-        1 if device["os_updated"] else 0,
-        1 if device["antivirus"] else 0,
-        1 if device["public_wifi"] else 0,
-    ]
+        device = st.session_state.device
+        labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi (Risk)"]
+        values = [
+            1 if device["screen_lock"] else 0,
+            1 if device["os_updated"] else 0,
+            1 if device["antivirus"] else 0,
+            1 if device["public_wifi"] else 0,
+        ]
 
-    df_dev = pd.DataFrame({"Control": labels, "Status": values})
-
-    fig2 = px.bar(
-        df_dev,
-        x="Control",
-        y="Status",
-    )
-    fig2.update_yaxes(
-        tickmode="array",
-        tickvals=[0, 1],
-        ticktext=["Off / No", "On / Yes"],
-    )
-    fig2.update_layout(
-        margin=dict(l=10, r=10, t=30, b=10),
-        height=350,
-    )
-    st.plotly_chart(fig2, use_container_width=True)
+        fig2, ax2 = plt.subplots()
+        ax2.bar(labels, values)
+        plt.xticks(rotation=30, ha='right')
+        st.pyplot(fig2)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -544,30 +531,3 @@ else:
             "<div class='reco-box'>No recommendations at this time. Your setup looks good.</div>",
             unsafe_allow_html=True
         )
-        fix_cols = ["High Risk", "Medium Risk", "Low Risk"]
-fix_times = [12, 8, 4]
-
-fig3, ax3 = plt.subplots()
-ax3.bar(fix_cols, fix_times)
-ax3.set_ylabel("Average Time to Fix (hours)")
-st.pyplot(fig3)
-st.markdown("## How Quickly Problems Are Fixed (Example)")
-
-fix_cols = ["High Risk", "Medium Risk", "Low Risk"]
-fix_times = [12, 8, 4]
-
-df_fix = pd.DataFrame({"Risk": fix_cols, "Hours": fix_times})
-
-fig3 = px.bar(
-    df_fix,
-    x="Risk",
-    y="Hours",
-)
-fig3.update_layout(
-    yaxis_title="Average Time to Fix (hours)",
-    margin=dict(l=10, r=10, t=30, b=10),
-    height=350,
-)
-st.plotly_chart(fig3, use_container_width=True)
-
-
