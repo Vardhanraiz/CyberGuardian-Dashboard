@@ -490,10 +490,10 @@ else:
             st.info("Add accounts to view password strength analytics.")
 
     # DEVICE SECURITY BAR CHART
-   with col2:
-        st.subheader("💻 Device Security Status")
-
-        device = st.session_state.device
+    # DEVICE SECURITY BAR CHART
+     with col2:
+         st.subheader("💻 Device Security Status")
+       device = st.session_state.device
         labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi (Risk)"]
         values = [
             1 if device["screen_lock"] else 0,
