@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import random  # for security tip of the day
 
 # ---------------------------------------------------------
 # PAGE CONFIG
@@ -288,7 +289,8 @@ st.markdown(
 )
 
 # ---------------------------------------------------------
-# ACCOUNTS PAGE - UPGRADED UI/UX
+# ---------------------------------------------------------
+# ACCOUNTS PAGE - UPGRADED UI/UX + PASSWORD HEALTH + REUSE
 # ---------------------------------------------------------
 if page == "Accounts":
     st.subheader("🔐 Accounts Manager")
@@ -297,7 +299,7 @@ if page == "Accounts":
         """
         <div class="card">
             <h3>Add a New Account</h3>
-            <p style='color:#8b949e;'>Enter your account details to evaluate password strength and 2FA status.</p>
+            <p style='color:#8b949e;'>Enter your account details to evaluate password strength, reuse, and 2FA status.</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -316,10 +318,12 @@ if page == "Accounts":
     if st.button("Add Account"):
         if name and password:
             pwd_strength = check_password_strength(password)
+            # store password internally (not displayed) so we can detect reuse
             st.session_state.accounts.append({
                 "name": name,
                 "password_strength": pwd_strength,
-                "two_fa": two_fa
+                "two_fa": two_fa,
+                "password": password
             })
             st.success(f"Added {name} ({pwd_strength})")
         else:
@@ -331,108 +335,51 @@ if page == "Accounts":
 
     if st.session_state.accounts:
         styled_accounts = []
+        passwords = [acc["password"] for acc in st.session_state.accounts]
+
         for acc in st.session_state.accounts:
+            # badge color
             if acc["password_strength"] == "Weak":
                 color = "#f85149"
+                base_score = 40
             elif acc["password_strength"] == "Medium":
                 color = "#d29922"
+                base_score = 70
             else:
                 color = "#3fb950"
+                base_score = 90
+
+            # simple per-account health score
+            health_score = base_score
+            if acc["two_fa"]:
+                health_score += 5
+            # if password reused, reduce
+            if passwords.count(acc["password"]) > 1:
+                health_score -= 15
+
+            health_score = max(0, min(100, health_score))
 
             badge = f"<span style='color:white;background-color:{color};padding:4px 10px;border-radius:6px;font-size:12px;'>{acc['password_strength']}</span>"
+
             styled_accounts.append([
                 acc["name"],
                 badge,
-                "✔️ Yes" if acc["two_fa"] else "❌ No"
+                "✔️ Yes" if acc["two_fa"] else "❌ No",
+                f"{health_score}/100"
             ])
 
-        df = pd.DataFrame(styled_accounts, columns=["Account", "Password Strength", "2FA Enabled"])
+        df = pd.DataFrame(styled_accounts, columns=["Account", "Password Strength", "2FA Enabled", "Health Score"])
 
         st.write(df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+        # Password reuse detector (simple)
+        if len(passwords) != len(set(passwords)):
+            st.warning("⚠️ Password reuse detected across accounts. Avoid using the same password on multiple services.")
     else:
         st.info("No accounts added yet. Use the form above to add your first account.")
 
 # ---------------------------------------------------------
-# DEVICE SECURITY PAGE - UPGRADED UI/UX
-# ---------------------------------------------------------
-elif page == "Device Security":
-    st.subheader("💻 Device Security Checklist")
-
-    st.markdown(
-        """
-        <div class="card">
-            <h3>Secure Your Devices</h3>
-            <p style='color:#8b949e;'>
-                Review your primary device settings. These factors directly impact your overall security score.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    device = st.session_state.device
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        device["screen_lock"] = st.checkbox(
-            "🔒 Screen Lock / Biometric Enabled",
-            device["screen_lock"],
-            help="Enabling PIN, pattern, fingerprint or face unlock prevents physical access."
-        )
-
-        device["os_updated"] = st.checkbox(
-            "🧩 Operating System is Up-to-Date",
-            device["os_updated"],
-            help="Keep OS and security patches updated."
-        )
-
-    with col2:
-        device["antivirus"] = st.checkbox(
-            "🛡️ Antivirus / Antimalware Installed",
-            device["antivirus"],
-            help="Real-time protection against malware and ransomware."
-        )
-
-        device["public_wifi"] = st.checkbox(
-            "📶 I Often Use Public Wi-Fi for Logins",
-            device["public_wifi"],
-            help="Public Wi-Fi (cafes, malls, open hotspots) increases risk without VPN."
-        )
-
-    st.session_state.device = device
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.subheader("🔍 Device Risk Summary")
-
-    issues = []
-    if not device["screen_lock"]:
-        issues.append("Screen lock / biometric protection is not enabled.")
-    if not device["os_updated"]:
-        issues.append("Operating system is not up-to-date.")
-    if not device["antivirus"]:
-        issues.append("Antivirus / antimalware is not installed or active.")
-    if device["public_wifi"]:
-        issues.append("You frequently use public Wi-Fi for logins.")
-
-    if issues:
-        st.markdown(
-            "<div class='reco-box'>Your device has some security gaps:</div>",
-            unsafe_allow_html=True
-        )
-        for issue in issues:
-            st.markdown(f"- {issue}")
-    else:
-        st.markdown(
-            "<div class='reco-box'>✅ Your device configuration looks secure.</div>",
-            unsafe_allow_html=True
-        )
-
-    st.success("Device security preferences saved.")
-
-# ---------------------------------------------------------
-# DASHBOARD PAGE - UPGRADED UI + GRAPHICAL ANALYTICS
+# DASHBOARD PAGE - PRO VERSION (SHIELD + TODO + GRAPHS + PROFILE)
 # ---------------------------------------------------------
 else:
     st.subheader("📊 CyberGuardian Overview")
@@ -440,24 +387,72 @@ else:
     score = calculate_score(st.session_state.accounts, st.session_state.device)
     recs = get_recommendations(st.session_state.accounts, st.session_state.device, score)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    # ---------- Security Shield Status ----------
+    if score >= 75:
+        shield_label = "🟢 Secure"
+        shield_desc = "Your overall security posture is good. Maintain your current habits."
+    elif score >= 50:
+        shield_label = "🟡 Warning"
+        shield_desc = "You have some important issues to fix to stay safe."
+    else:
+        shield_label = "🔴 Risky"
+        shield_desc = "Your accounts and devices are at high risk. Immediate action is recommended."
 
-    # SCORE CARD
-    st.markdown(
-        f"""
-        <div class="card" style="text-align:center;">
-            <h2 style="color:#58a6ff;">Overall Security Score</h2>
-            <h1 style="font-size: 60px; color:#3fb950; font-weight:800;">{score}</h1>
-            <p style="color:#8b949e;">Your personal cybersecurity posture score (0–100)</p>
-        </div>
-        """,
-        unsafe_allow_html=True
+    # ---------- Security Insight of the Day ----------
+    tips = [
+        "Never reuse the same password across banking, email, and social media.",
+        "Always enable 2FA on email and financial accounts first.",
+        "Avoid logging into important accounts on public Wi-Fi without a VPN.",
+        "Update your operating system and apps monthly to patch vulnerabilities.",
+        "Use a password manager to store long, unique passwords safely."
+    ]
+    daily_tip = random.choice(tips)
+
+    # ---------- Profile & Platform Selection ----------
+    platform = st.selectbox(
+        "Primary Platform",
+        ["Android + Windows", "iPhone + MacOS", "Only Mobile", "Only Laptop/Desktop"],
+        help="Used to customize security recommendations in future versions."
     )
 
-    st.progress(score / 100)
+    col_profile, col_score = st.columns([1, 2])
+
+    with col_profile:
+        st.markdown(
+            f"""
+            <div class="card">
+                <h3>👤 User Profile</h3>
+                <p style='color:#8b949e; font-size:14px;'>
+                    Security Level: <b>{shield_label}</b><br>
+                    Primary Platform: <b>{platform}</b><br>
+                    Accounts Tracked: <b>{len(st.session_state.accounts)}</b><br>
+                </p>
+                <p style='color:#8b949e; font-size:13px; margin-top:8px;'>
+                    💡 Tip of the Day:<br> {daily_tip}
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col_score:
+        st.markdown(
+            f"""
+            <div class="card" style="text-align:center;">
+                <h3 style="color:#58a6ff;">Overall Security Score</h3>
+                <h1 style="font-size: 60px; color:#3fb950; font-weight:800;">{score}</h1>
+                <p style="color:#8b949e;">Score range: 0–100 (higher is safer)</p>
+                <p style="margin-top:4px; color:#8b949e;">Status: <b>{shield_label}</b></p>
+                <p style="margin-top:4px; color:#8b949e; font-size:13px;">{shield_desc}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.progress(score / 100)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ---------- Charts Row ----------
     col1, col2 = st.columns(2)
 
     # PASSWORD STRENGTH PIE CHART
@@ -499,7 +494,65 @@ else:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # RECOMMENDATIONS WITH SEVERITY
+    # ---------- Security To-Do List (Action-Oriented) ----------
+    st.subheader("✅ Security To-Do List")
+
+    todo_items = []
+
+    # Build todo list from actual issues
+    weak_accounts = [a["name"] for a in st.session_state.accounts if a["password_strength"] == "Weak"]
+    no_2fa_accounts = [a["name"] for a in st.session_state.accounts if not a["two_fa"]]
+
+    if weak_accounts:
+        todo_items.append(f"Change weak passwords for: {', '.join(weak_accounts)}")
+    if no_2fa_accounts:
+        todo_items.append(f"Enable 2FA on: {', '.join(no_2fa_accounts)}")
+
+    if not device["screen_lock"]:
+        todo_items.append("Enable screen lock / biometric on your primary device.")
+    if not device["os_updated"]:
+        todo_items.append("Update your operating system to the latest version.")
+    if not device["antivirus"]:
+        todo_items.append("Install or enable antivirus/antimalware protection.")
+    if device["public_wifi"]:
+        todo_items.append("Avoid logging into important accounts on public Wi-Fi without VPN.")
+
+    if todo_items:
+        for i, item in enumerate(todo_items):
+            col_todo, col_btn = st.columns([4, 1])
+            with col_todo:
+                st.markdown(f"- {item}")
+            with col_btn:
+                st.button("Mark Done", key=f"todo_{i}")
+    else:
+        st.markdown(
+            "<div class='reco-box'>✅ No urgent tasks. Keep maintaining good security habits.</div>",
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Login History Risk (Simulated) ----------
+    st.subheader("🕵️ Simulated Login Risk Signals")
+
+    st.markdown(
+        """
+        <div class="card">
+            <p style='color:#8b949e; font-size:14px;'>
+                In a future version, this section will be powered by real login metadata.<br>
+                For now, it demonstrates how unusual login patterns could be flagged:
+            </p>
+            <ul style='color:#c9d1d9; font-size:14px;'>
+                <li>⚠ Login from a new device at 2:30 AM</li>
+                <li>⚠ Multiple failed login attempts within 5 minutes</li>
+                <li>⚠ Login from a different country than usual</li>
+            </ul>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ---------- Recommendations with Severity ----------
     st.subheader("📝 Personalized Recommendations")
 
     if recs:
