@@ -96,7 +96,7 @@ st.markdown(dark_theme_css, unsafe_allow_html=True)
 # PAGE CONFIG
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="CyberGuardian Dashboard",
+    page_title=" Dashboard",
     page_icon="🛡️",
     layout="wide"
 )
