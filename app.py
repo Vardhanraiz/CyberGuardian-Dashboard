@@ -287,23 +287,87 @@ if page == "Accounts":
         st.info("No accounts added yet. Add your first account above.")
 
 
+
 # ---------------------------------------------------------
-# DEVICE SECURITY PAGE
+# DEVICE SECURITY PAGE - UPGRADED UI/UX
 # ---------------------------------------------------------
 elif page == "Device Security":
     st.title("💻 Device Security Checklist")
 
+    st.markdown(
+        """
+        <div class="card">
+            <h3>Secure Your Devices</h3>
+            <p style='color:#8b949e;'>
+                Review the following settings on your primary device (laptop / phone). 
+                These factors directly affect your overall cyber risk.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     device = st.session_state.device
 
-    device["screen_lock"] = st.checkbox("Screen Lock / Biometric Enabled", device["screen_lock"])
-    device["os_updated"] = st.checkbox("OS Updated", device["os_updated"])
-    device["antivirus"] = st.checkbox("Antivirus Installed", device["antivirus"])
-    device["public_wifi"] = st.checkbox("Frequently Uses Public Wi-Fi", device["public_wifi"])
+    col1, col2 = st.columns(2)
+
+    with col1:
+        device["screen_lock"] = st.checkbox(
+            "🔒 Screen Lock / Biometric Enabled",
+            device["screen_lock"],
+            help="PIN, pattern, fingerprint or face unlock should be enabled."
+        )
+
+        device["os_updated"] = st.checkbox(
+            "🧩 Operating System is Up-to-Date",
+            device["os_updated"],
+            help="Latest OS and security patches are installed."
+        )
+
+    with col2:
+        device["antivirus"] = st.checkbox(
+            "🛡️ Antivirus / Antimalware Installed",
+            device["antivirus"],
+            help="Real-time protection is enabled and updated."
+        )
+
+        device["public_wifi"] = st.checkbox(
+            "📶 I Often Use Public Wi-Fi for Logins",
+            device["public_wifi"],
+            help="Public Wi-Fi (cafes, malls, open hotspots) increases risk."
+        )
 
     st.session_state.device = device
 
-    st.success("Settings Updated!")
+    st.markdown("<br>", unsafe_allow_html=True)
 
+    # Small summary
+    st.subheader("🔍 Device Risk Summary")
+
+    issues = []
+    if not device["screen_lock"]:
+        issues.append("Screen lock is not enabled.")
+    if not device["os_updated"]:
+        issues.append("Operating system is not updated.")
+    if not device["antivirus"]:
+        issues.append("Antivirus is not enabled.")
+    if device["public_wifi"]:
+        issues.append("Public Wi-Fi is used frequently.")
+
+    if issues:
+        st.markdown(
+            "<div class='reco-box'>Your device has some security gaps:</div>",
+            unsafe_allow_html=True
+        )
+        for issue in issues:
+            st.markdown(f"- {issue}")
+    else:
+        st.markdown(
+            "<div class='reco-box'>✅ Your device configuration looks secure.</div>",
+            unsafe_allow_html=True
+        )
+
+    st.success("Device security preferences saved.")
 
 # ---------------------------------------------------------
 # DASHBOARD PAGE
