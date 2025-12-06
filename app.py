@@ -1,12 +1,22 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+
+# ---------------------------------------------------------
+# PAGE CONFIG
+# ---------------------------------------------------------
+st.set_page_config(
+    page_title="CyberGuardian Dashboard",
+    page_icon="🛡️",
+    layout="wide"
+)
 
 # ---------------------------------------------------------
 # CUSTOM DARK THEME + UI STYLING
 # ---------------------------------------------------------
-
 dark_theme_css = """
 <style>
+
 /* Global background */
 body, .block-container {
     background-color: #0d1117 !important;
@@ -52,11 +62,6 @@ input, textarea {
     transform: scale(1.02);
 }
 
-/* Dataframe formatting */
-.dataframe {
-    color: #e6edf3 !important;
-}
-
 /* Card-style containers */
 .card {
     background-color: #161b22;
@@ -70,16 +75,18 @@ input, textarea {
 .reco-box {
     background-color: #21262d;
     padding: 12px;
-    border-left: 4px solid #3fb950;
     border-radius: 6px;
     margin-bottom: 10px;
     color: #c9d1d9;
     font-size: 15px;
 }
 
-/* Table styling */
+/* Dataframe and tables */
 .stDataFrame {
     background-color: #0d1117 !important;
+}
+.dataframe {
+    color: #e6edf3 !important;
 }
 
 /* Progress bar */
@@ -89,20 +96,10 @@ input, textarea {
 
 </style>
 """
-
 st.markdown(dark_theme_css, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# PAGE CONFIG
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title=" CyberGuardian Dashbord",
-    page_icon="🛡️",
-    layout="wide"
-)
-
-# ---------------------------------------------------------
-# INITIALIZE SESSION STATE
+# SESSION STATE
 # ---------------------------------------------------------
 if "accounts" not in st.session_state:
     st.session_state.accounts = []
@@ -116,7 +113,7 @@ if "device" not in st.session_state:
     }
 
 # ---------------------------------------------------------
-# LOGIC FUNCTIONS
+# CORE LOGIC FUNCTIONS
 # ---------------------------------------------------------
 def check_password_strength(password: str) -> str:
     score = 0
@@ -135,6 +132,7 @@ def check_password_strength(password: str) -> str:
         return "Weak"
     elif score == 3:
         return "Medium"
+        # Strong
     else:
         return "Strong"
 
@@ -180,127 +178,192 @@ def get_recommendations(accounts: list, device: dict, score: int) -> list:
         recs.append("Enable 2FA for: " + ", ".join(no_2fa_accounts))
 
     if not device["screen_lock"]:
-        recs.append("Enable screen lock or biometric security on your device.")
+        recs.append("Enable screen lock or biometric protection on your device.")
 
     if not device["os_updated"]:
         recs.append("Update your operating system to the latest version.")
 
     if not device["antivirus"]:
-        recs.append("Install/Update antivirus software.")
+        recs.append("Install and regularly update antivirus/antimalware software.")
 
     if device["public_wifi"]:
-        recs.append("Avoid using public Wi-Fi or use a VPN.")
+        recs.append("Avoid using public Wi-Fi for logins or use a VPN.")
 
     if score < 40:
-        recs.append("HIGH RISK: Fix critical issues immediately.")
+        recs.append("Your overall risk is HIGH. Fix the critical issues immediately.")
     elif score < 70:
-        recs.append("MODERATE RISK: Improve passwords and enable 2FA.")
+        recs.append("Your overall risk is MODERATE. Focus on passwords and 2FA.")
     else:
-        recs.append("LOW RISK: Maintain your current security practices.")
+        recs.append("Your overall risk is LOW. Maintain your security posture.")
 
     return recs
 
 
+def classify_recommendation(text: str):
+    """
+    Assign severity and category based on content.
+    Returns (severity, color, label)
+    """
+    text_lower = text.lower()
+
+    # Severity
+    if "high" in text_lower or "weak password" in text_lower or "critical" in text_lower:
+        severity = "High"
+        color = "#f85149"  # red
+    elif "moderate" in text_lower or "avoid using public wi-fi" in text_lower or "no 2fa" in text_lower:
+        severity = "Medium"
+        color = "#d29922"  # orange
+    else:
+        severity = "Low"
+        color = "#3fb950"  # green
+
+    # Category guess
+    if "password" in text_lower:
+        category = "Account Security"
+    elif "2fa" in text_lower:
+        category = "Account Security"
+    elif "device" in text_lower or "operating system" in text_lower or "antivirus" in text_lower:
+        category = "Device Security"
+    elif "wi-fi" in text_lower or "vpn" in text_lower:
+        category = "Network Risk"
+    else:
+        category = "General"
+
+    label = f"{severity} • {category}"
+    return severity, color, label
+
 # ---------------------------------------------------------
-# SIDEBAR NAVIGATION
+# SIDEBAR - NAVIGATION + SUMMARY
 # ---------------------------------------------------------
 st.sidebar.title("🛡️ CyberGuardian")
+
+# Quick summary
+total_accounts = len(st.session_state.accounts)
+weak_count = sum(1 for a in st.session_state.accounts if a["password_strength"] == "Weak")
+device_risks = 0
+d = st.session_state.device
+if not d["screen_lock"]:
+    device_risks += 1
+if not d["os_updated"]:
+    device_risks += 1
+if not d["antivirus"]:
+    device_risks += 1
+if d["public_wifi"]:
+    device_risks += 1
+
+current_score = calculate_score(st.session_state.accounts, st.session_state.device)
+
+if current_score >= 70:
+    risk_label = "🟢 Low Risk"
+elif current_score >= 40:
+    risk_label = "🟡 Moderate Risk"
+else:
+    risk_label = "🔴 High Risk"
+
+st.sidebar.markdown("### 🔍 Security Snapshot")
+st.sidebar.markdown(f"- Accounts: **{total_accounts}**")
+st.sidebar.markdown(f"- Weak Passwords: **{weak_count}**")
+st.sidebar.markdown(f"- Device Issues: **{device_risks}**")
+st.sidebar.markdown(f"- Status: **{risk_label}**")
+
+st.sidebar.markdown("---")
 page = st.sidebar.radio("Navigation", ["Dashboard", "Accounts", "Device Security"])
 
-
 # ---------------------------------------------------------
+# GLOBAL HEADER
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <div style='padding:10px 16px; background:#020817; border-radius:12px; border:1px solid #30363d; margin-bottom:10px;'>
+      <h1 style='margin:0; display:flex; align-items:center; gap:8px; font-size:26px;'>
+        <span>🛡️</span> 
+        <span>CyberGuardian – Personal Cybersecurity Dashboard</span>
+      </h1>
+      <p style='margin:4px 0 0; color:#8b949e; font-size:14px;'>
+        Analyze your accounts, device settings, and overall cyber hygiene score with clear visual risk indicators.
+      </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------------------------------------------------------
 # ACCOUNTS PAGE - UPGRADED UI/UX
 # ---------------------------------------------------------
 if page == "Accounts":
-    st.title("🔐 Accounts Manager")
+    st.subheader("🔐 Accounts Manager")
 
     st.markdown(
         """
         <div class="card">
             <h3>Add a New Account</h3>
-            <p style='color:#8b949e;'>Enter account details below to evaluate password strength and 2FA status.</p>
+            <p style='color:#8b949e;'>Enter your account details to evaluate password strength and 2FA status.</p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    # ----------------- FORM -----------------
     with st.container():
         colA, colB = st.columns(2)
 
         with colA:
             name = st.text_input("Account Name", placeholder="e.g., Gmail, Instagram")
-
         with colB:
             password = st.text_input("Password", placeholder="Enter password", type="password")
 
-    two_fa = st.checkbox("Enable 2FA?", help="Two-factor authentication improves security.")
+    two_fa = st.checkbox("2FA Enabled?", help="Two-factor authentication greatly improves account security.")
 
     if st.button("Add Account"):
         if name and password:
             pwd_strength = check_password_strength(password)
-
             st.session_state.accounts.append({
                 "name": name,
                 "password_strength": pwd_strength,
                 "two_fa": two_fa
             })
-
             st.success(f"Added {name} ({pwd_strength})")
         else:
-            st.warning("Please fill all fields before adding an account.")
+            st.warning("Please provide both account name and password.")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ----------------- ACCOUNT LIST -----------------
     st.subheader("📋 Your Accounts")
 
     if st.session_state.accounts:
         styled_accounts = []
         for acc in st.session_state.accounts:
-            # Badge colors
             if acc["password_strength"] == "Weak":
-                color = "#f85149"   # red
+                color = "#f85149"
             elif acc["password_strength"] == "Medium":
-                color = "#d29922"   # yellow/orange
+                color = "#d29922"
             else:
-                color = "#3fb950"   # green
+                color = "#3fb950"
 
             badge = f"<span style='color:white;background-color:{color};padding:4px 10px;border-radius:6px;font-size:12px;'>{acc['password_strength']}</span>"
-
             styled_accounts.append([
                 acc["name"],
                 badge,
                 "✔️ Yes" if acc["two_fa"] else "❌ No"
             ])
 
-        # Display table with HTML badges
         df = pd.DataFrame(styled_accounts, columns=["Account", "Password Strength", "2FA Enabled"])
 
-        st.write(
-            df.to_html(escape=False, index=False),
-            unsafe_allow_html=True
-        )
+        st.write(df.to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
-        st.info("No accounts added yet. Add your first account above.")
-
-
+        st.info("No accounts added yet. Use the form above to add your first account.")
 
 # ---------------------------------------------------------
 # DEVICE SECURITY PAGE - UPGRADED UI/UX
 # ---------------------------------------------------------
 elif page == "Device Security":
-    st.title("💻 Device Security Checklist")
+    st.subheader("💻 Device Security Checklist")
 
     st.markdown(
         """
         <div class="card">
             <h3>Secure Your Devices</h3>
             <p style='color:#8b949e;'>
-                Review the following settings on your primary device (laptop / phone). 
-                These factors directly affect your overall cyber risk.
+                Review your primary device settings. These factors directly impact your overall security score.
             </p>
         </div>
         """,
@@ -315,44 +378,43 @@ elif page == "Device Security":
         device["screen_lock"] = st.checkbox(
             "🔒 Screen Lock / Biometric Enabled",
             device["screen_lock"],
-            help="PIN, pattern, fingerprint or face unlock should be enabled."
+            help="Enabling PIN, pattern, fingerprint or face unlock prevents physical access."
         )
 
         device["os_updated"] = st.checkbox(
             "🧩 Operating System is Up-to-Date",
             device["os_updated"],
-            help="Latest OS and security patches are installed."
+            help="Keep OS and security patches updated."
         )
 
     with col2:
         device["antivirus"] = st.checkbox(
             "🛡️ Antivirus / Antimalware Installed",
             device["antivirus"],
-            help="Real-time protection is enabled and updated."
+            help="Real-time protection against malware and ransomware."
         )
 
         device["public_wifi"] = st.checkbox(
             "📶 I Often Use Public Wi-Fi for Logins",
             device["public_wifi"],
-            help="Public Wi-Fi (cafes, malls, open hotspots) increases risk."
+            help="Public Wi-Fi (cafes, malls, open hotspots) increases risk without VPN."
         )
 
     st.session_state.device = device
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Small summary
     st.subheader("🔍 Device Risk Summary")
 
     issues = []
     if not device["screen_lock"]:
-        issues.append("Screen lock is not enabled.")
+        issues.append("Screen lock / biometric protection is not enabled.")
     if not device["os_updated"]:
-        issues.append("Operating system is not updated.")
+        issues.append("Operating system is not up-to-date.")
     if not device["antivirus"]:
-        issues.append("Antivirus is not enabled.")
+        issues.append("Antivirus / antimalware is not installed or active.")
     if device["public_wifi"]:
-        issues.append("Public Wi-Fi is used frequently.")
+        issues.append("You frequently use public Wi-Fi for logins.")
 
     if issues:
         st.markdown(
@@ -370,27 +432,23 @@ elif page == "Device Security":
     st.success("Device security preferences saved.")
 
 # ---------------------------------------------------------
-# DASHBOARD PAGE
-# ---------------------------------------------------------
-
-     # ---------------------------------------------------------
 # DASHBOARD PAGE - UPGRADED UI + GRAPHICAL ANALYTICS
 # ---------------------------------------------------------
 else:
-    st.title("📊 CyberGuardian Dashboard")
+    st.subheader("📊 CyberGuardian Overview")
 
     score = calculate_score(st.session_state.accounts, st.session_state.device)
     recs = get_recommendations(st.session_state.accounts, st.session_state.device, score)
 
-    st.markdown("""<br>""", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # -------------------- SCORE CARD ------------------------
+    # SCORE CARD
     st.markdown(
         f"""
         <div class="card" style="text-align:center;">
             <h2 style="color:#58a6ff;">Overall Security Score</h2>
             <h1 style="font-size: 60px; color:#3fb950; font-weight:800;">{score}</h1>
-            <p>Your personal cybersecurity posture score (0–100)</p>
+            <p style="color:#8b949e;">Your personal cybersecurity posture score (0–100)</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -398,18 +456,15 @@ else:
 
     st.progress(score / 100)
 
-    st.markdown("""<br>""", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # -------------------- LAYOUT (2 Columns) ------------------------
     col1, col2 = st.columns(2)
 
-    # ---------- PIE CHART: PASSWORD STRENGTH ----------
+    # PASSWORD STRENGTH PIE CHART
     with col1:
         st.subheader("🔐 Password Strength Distribution")
 
         if st.session_state.accounts:
-            import matplotlib.pyplot as plt
-
             counts = {"Weak": 0, "Medium": 0, "Strong": 0}
             for acc in st.session_state.accounts:
                 counts[acc["password_strength"]] += 1
@@ -420,16 +475,13 @@ else:
             fig1, ax1 = plt.subplots()
             ax1.pie(values, labels=labels, autopct='%1.1f%%')
             ax1.axis('equal')
-
             st.pyplot(fig1)
         else:
             st.info("Add accounts to view password strength analytics.")
 
-    # ---------- BAR CHART: DEVICE SECURITY ----------
+    # DEVICE SECURITY BAR CHART
     with col2:
         st.subheader("💻 Device Security Status")
-
-        import matplotlib.pyplot as plt
 
         device = st.session_state.device
         labels = ["Screen Lock", "OS Updated", "Antivirus", "Public Wi-Fi (Risk)"]
@@ -437,28 +489,35 @@ else:
             1 if device["screen_lock"] else 0,
             1 if device["os_updated"] else 0,
             1 if device["antivirus"] else 0,
-            1 if device["public_wifi"] else 0
+            1 if device["public_wifi"] else 0,
         ]
 
         fig2, ax2 = plt.subplots()
         ax2.bar(labels, values)
         plt.xticks(rotation=30, ha='right')
-
         st.pyplot(fig2)
 
-    st.markdown("""<br>""", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # -------------------- RECOMMENDATIONS ------------------------
+    # RECOMMENDATIONS WITH SEVERITY
     st.subheader("📝 Personalized Recommendations")
 
-    for r in recs:
+    if recs:
+        for r in recs:
+            severity, color, label = classify_recommendation(r)
+            st.markdown(
+                f"""
+                <div class="reco-box" style="border-left:4px solid {color};">
+                    <div style="font-size:13px; color:{color}; font-weight:600; margin-bottom:4px;">
+                        {label}
+                    </div>
+                    <div>{r}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+    else:
         st.markdown(
-            f"""
-            <div class="reco-box">
-                {r}
-            </div>
-            """,
+            "<div class='reco-box'>No recommendations at this time. Your setup looks good.</div>",
             unsafe_allow_html=True
         )
-   
-
