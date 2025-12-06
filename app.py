@@ -2,6 +2,97 @@ import streamlit as st
 import pandas as pd
 
 # ---------------------------------------------------------
+# CUSTOM DARK THEME + UI STYLING
+# ---------------------------------------------------------
+
+dark_theme_css = """
+<style>
+/* Global background */
+body, .block-container {
+    background-color: #0d1117 !important;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #161b22 !important;
+    border-right: 1px solid #30363d;
+}
+
+/* Titles */
+h1, h2, h3, h4 {
+    color: #e6edf3 !important;
+    font-weight: 600 !important;
+}
+
+/* Text color */
+p, div, label {
+    color: #c9d1d9 !important;
+}
+
+/* Inputs */
+input, textarea {
+    background-color: #0d1117 !important;
+    color: #e6edf3 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 6px !important;
+}
+
+/* Buttons */
+.stButton>button {
+    background: linear-gradient(90deg, #1f6feb, #3b82f6);
+    color: white !important;
+    padding: 10px 18px !important;
+    border-radius: 8px !important;
+    border: none;
+    font-weight: 600;
+}
+
+.stButton>button:hover {
+    background: linear-gradient(90deg, #3b82f6, #1f6feb);
+    transform: scale(1.02);
+}
+
+/* Dataframe formatting */
+.dataframe {
+    color: #e6edf3 !important;
+}
+
+/* Card-style containers */
+.card {
+    background-color: #161b22;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: 1px solid #30363d;
+    margin-bottom: 15px;
+}
+
+/* Recommendation boxes */
+.reco-box {
+    background-color: #21262d;
+    padding: 12px;
+    border-left: 4px solid #3fb950;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    color: #c9d1d9;
+    font-size: 15px;
+}
+
+/* Table styling */
+.stDataFrame {
+    background-color: #0d1117 !important;
+}
+
+/* Progress bar */
+[data-testid="stProgressBar"] > div > div {
+    background-color: #238636 !important;
+}
+
+</style>
+"""
+
+st.markdown(dark_theme_css, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
 # PAGE CONFIG
 # ---------------------------------------------------------
 st.set_page_config(
