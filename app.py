@@ -269,7 +269,7 @@ st.sidebar.markdown(f"- Device Issues: **{device_risks}**")
 st.sidebar.markdown(f"- Status: **{risk_label}**")
 
 st.sidebar.markdown("---")
-page = st.sidebar.radio("Navigation", ["Dashboard", "Accounts", "Device Security"])
+page = st.sidebar.radio(     "Navigation",     ["Dashboard", "Accounts", "Device Security", "Future Vision (Labs)"] )
 
 # ---------------------------------------------------------
 # GLOBAL HEADER
@@ -525,6 +525,162 @@ else:
 
     # RECOMMENDATIONS WITH SEVERITY
     st.subheader("📝 Personalized Recommendations")
+    elif page == "Future Vision (Labs)":
+    st.subheader("🔮 Future Vision – Prototype Labs")
+
+    st.markdown(
+        """
+        <div class="card">
+            <h3>Roadmap to a Smarter CyberGuardian</h3>
+            <p style='color:#9ca3af; font-size:0.9rem;'>
+                This page showcases experimental and planned features such as breach monitoring, 
+                ML-based threat prediction, browser extension integration, mobile app vision, and cloud profile analysis.
+                Some features are simulated prototypes to demonstrate how the product will evolve.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ------------------- ROW 1: BREACH + ML THREAT PREDICTION -------------------
+    col1, col2 = st.columns(2)
+
+    # Breach API Integration (Simulated)
+    with col1:
+        st.markdown("### 🧬 Breach API Integration (Prototype)")
+
+        email = st.text_input("Enter email to check for breaches", placeholder="e.g., user@example.com")
+
+        if st.button("Check Breach Status"):
+            if email:
+                # SIMULATION: In future, this will call a real breach API like HaveIBeenPwned
+                st.warning(
+                    "⚠ This is a demo. In a production version, this button would query a breach database "
+                    "to check if this email appears in known data leaks."
+                )
+                st.info("For now, we only show the concept and UI flow.")
+            else:
+                st.error("Please enter an email to check.")
+
+    # ML-Based Threat Prediction (simple rule-based prototype)
+    with col2:
+        st.markdown("### 🤖 ML-Based Threat Prediction (Concept)")
+
+        st.markdown(
+            """
+            <p style='color:#9ca3af; font-size:0.9rem;'>
+            Here we simulate an ML model by using your current Cyber Score and configuration to assign 
+            a <b>Predicted Risk Level</b>.
+            In a future version, a real model would learn from behavioral and device data.
+            </p>
+            """,
+            unsafe_allow_html=True
+        )
+
+        current_score = calculate_score(st.session_state.accounts, st.session_state.device)
+        if current_score >= 75:
+            pred_level = "Low"
+            msg = "Model prediction: Low chance of near-term compromise."
+        elif current_score >= 50:
+            pred_level = "Medium"
+            msg = "Model prediction: Medium chance of targeted or opportunistic attacks."
+        else:
+            pred_level = "High"
+            msg = "Model prediction: High likelihood of successful attack if no action is taken."
+
+        st.metric("Predicted Threat Level", pred_level)
+        st.caption(msg)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ------------------- ROW 2: BROWSER EXTENSION + MOBILE APP -------------------
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.markdown("### 🌐 Browser Extension – Coming Soon")
+        st.markdown(
+            """
+            <div class="card">
+                <p style='color:#9ca3af; font-size:0.9rem;'>
+                    Planned browser extension will:
+                </p>
+                <ul style='color:#e5e7eb; font-size:0.9rem;'>
+                    <li>🔐 Detect weak passwords during sign-up / login</li>
+                    <li>⚠ Warn on suspicious or phishing URLs</li>
+                    <li>🛡 Trigger 2FA reminders in real-time</li>
+                </ul>
+                <p style='color:#9ca3af; font-size:0.85rem; margin-top:6px;'>
+                    This prototype app already defines the backend logic, which the extension can call via APIs later.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col4:
+        st.markdown("### 📱 Mobile App – On-the-Go Security")
+        st.markdown(
+            """
+            <div class="card">
+                <p style='color:#9ca3af; font-size:0.9rem;'>
+                    Future mobile app version will:
+                </p>
+                <ul style='color:#e5e7eb; font-size:0.9rem;'>
+                    <li>📊 Show your Cyber Score and risk level</li>
+                    <li>🔔 Send push alerts on high-risk changes</li>
+                    <li>📶 Warn you when using unsafe Wi-Fi networks</li>
+                </ul>
+                <p style='color:#9ca3af; font-size:0.85rem; margin-top:6px;'>
+                    Current Streamlit prototype validates the core logic and UI flow before native app development.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ------------------- ROW 3: CLOUD PROFILES -------------------
+    st.markdown("### ☁ Cloud Profiles – Future Expansion")
+
+    st.markdown(
+        """
+        <p style='color:#9ca3af; font-size:0.9rem;'>
+            In future versions, CyberGuardian will also analyze the security posture of your cloud services
+            such as Google Drive, OneDrive, and cloud email configurations.
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    cloud_services = st.multiselect(
+        "Which cloud services do you actively use?",
+        ["Google Drive", "OneDrive", "iCloud", "Dropbox", "Gmail", "Outlook", "Other"],
+    )
+
+    if cloud_services:
+        st.markdown(
+            """
+            <div class="card">
+                <h4>Cloud Security Considerations</h4>
+                <p style='color:#9ca3af; font-size:0.9rem;'>
+                    Based on your selected services, recommended checks include:
+                </p>
+                <ul style='color:#e5e7eb; font-size:0.9rem;'>
+                    <li>✅ Enabling 2FA / MFA for all cloud accounts</li>
+                    <li>🔐 Reviewing file/folder sharing permissions regularly</li>
+                    <li>📁 Encrypting highly sensitive documents before upload</li>
+                    <li>🧾 Checking activity logs for unusual access or downloads</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.info("Select at least one cloud service to see future cloud security insights.")
+
 
     if recs:
         for r in recs:
